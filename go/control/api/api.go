@@ -3,15 +3,23 @@ package api
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"time"
 
 	"github.com/oasisprotocol/oasis-core/go/common/crypto/signature"
 	"github.com/oasisprotocol/oasis-core/go/common/errors"
 	"github.com/oasisprotocol/oasis-core/go/common/identity"
 	"github.com/oasisprotocol/oasis-core/go/common/node"
+	"github.com/oasisprotocol/oasis-core/go/common/prettyprint"
 	consensus "github.com/oasisprotocol/oasis-core/go/consensus/api"
 	epochtime "github.com/oasisprotocol/oasis-core/go/epochtime/api"
 	upgrade "github.com/oasisprotocol/oasis-core/go/upgrade/api"
+)
+
+var (
+	_ prettyprint.PrettyPrinter = (*Status)(nil)
+	_ prettyprint.PrettyPrinter = (*IdentityStatus)(nil)
 )
 
 // NodeController is a node controller interface.
@@ -61,6 +69,19 @@ type Status struct {
 	Registration RegistrationStatus `json:"registration"`
 }
 
+func (s Status) PrettyPrint(prefix string, w io.Writer) {
+	fmt.Fprintf(w, "%sSoftware version: %s\n", prefix, s.SoftwareVersion)
+	fmt.Fprintf(w, "%sIdentity:\n", prefix)
+	s.Identity.PrettyPrint(prefix+"  ", w)
+	fmt.Fprintf(w, "%sConsensus:\n", prefix)
+	s.Consensus.PrettyPrint(prefix+"  ", w)
+	fmt.Fprintf(w, "%sRegistration: %s\n", prefix, s.Registration)
+}
+
+func (s Status) PrettyType() (interface{}, error) {
+	return s, nil
+}
+
 // IdentityStatus is the current node identity status, listing all the public keys that identify
 // this node in different contexts.
 type IdentityStatus struct {
@@ -75,6 +96,17 @@ type IdentityStatus struct {
 
 	// TLS are the public keys used for TLS connections.
 	TLS []signature.PublicKey `json:"tls"`
+}
+
+func (s IdentityStatus) PrettyPrint(prefix string, w io.Writer) {
+	fmt.Fprintf(w, "%sNode: %s\n", prefix, s.Node)
+	fmt.Fprintf(w, "%sP2P: %s\n", prefix, s.P2P)
+	fmt.Fprintf(w, "%sConsensus: %s\n", prefix, s.Consensus)
+	fmt.Fprintf(w, "%sTLS: %s\n", prefix, s.TLS)
+}
+
+func (s IdentityStatus) PrettyType() (interface{}, error) {
+	return s, nil
 }
 
 // RegistrationStatus is the node registration status.

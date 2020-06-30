@@ -4,6 +4,8 @@ package api
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"time"
 
 	beacon "github.com/oasisprotocol/oasis-core/go/beacon/api"
@@ -11,6 +13,7 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/common/crypto/signature"
 	"github.com/oasisprotocol/oasis-core/go/common/errors"
 	"github.com/oasisprotocol/oasis-core/go/common/node"
+	"github.com/oasisprotocol/oasis-core/go/common/prettyprint"
 	"github.com/oasisprotocol/oasis-core/go/common/pubsub"
 	"github.com/oasisprotocol/oasis-core/go/consensus/api/transaction"
 	epochtime "github.com/oasisprotocol/oasis-core/go/epochtime/api"
@@ -41,6 +44,8 @@ var (
 	// ErrVersionNotFound is the error returned when the given version (height) cannot be found,
 	// possibly because it was pruned.
 	ErrVersionNotFound = errors.New(moduleName, 3, "consensus: version not found")
+
+	_ prettyprint.PrettyPrinter = (*Status)(nil)
 )
 
 // ClientBackend is a limited consensus interface used by clients that connect to the local full
@@ -127,6 +132,26 @@ type Status struct {
 
 	// IsValidator returns whether the current node is part of the validator set.
 	IsValidator bool `json:"is_validator"`
+}
+
+func (s Status) PrettyPrint(prefix string, w io.Writer) {
+	fmt.Fprintf(w, "%sConsensus version: %s\n", prefix, s.ConsensusVersion)
+	fmt.Fprintf(w, "%sBackend: %s\n", prefix, s.Backend)
+
+	fmt.Fprintf(w, "%sNodePeers: %s\n", prefix, s.NodePeers)
+
+	fmt.Fprintf(w, "%sLatest height: %d\n", prefix, s.LatestHeight)
+	fmt.Fprintf(w, "%sLatest hash: %s\n", prefix, s.LatestHash)
+	fmt.Fprintf(w, "%sLatest time: %s\n", prefix, s.LatestTime)
+
+	fmt.Fprintf(w, "%sGenesis height: %d\n", prefix, s.GenesisHeight)
+	fmt.Fprintf(w, "%sGenesis hash: %s\n", prefix, s.GenesisHash)
+
+	fmt.Fprintf(w, "%Is validator: %v\n", prefix, s.IsValidator)
+}
+
+func (s Status) PrettyType() (interface{}, error) {
+	return s, nil
 }
 
 // Backend is an interface that a consensus backend must provide.
