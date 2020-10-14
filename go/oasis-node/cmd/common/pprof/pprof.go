@@ -71,6 +71,9 @@ func (p *pprofService) Start() error {
 		return err
 	}
 
+	runtime.SetBlockProfileRate(1)
+	runtime.SetMutexProfileFraction(1)
+
 	// Create a new mux just for the pprof endpoints to avoid using the
 	// global multiplexer where pprof's init function registers by default.
 	mux := http.NewServeMux()

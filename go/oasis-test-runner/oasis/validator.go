@@ -103,8 +103,10 @@ func (val *Validator) startNode() error {
 			workerConsensusRPCEnabled()
 	}
 
-	if len(val.net.validators) >= 1 && val == val.net.validators[0] {
-		args = args.tendermintSupplementarySanityEnabled()
+	if !val.consensus.DisableSupplementarySanityChecks {
+		if len(val.net.validators) >= 1 && val == val.net.validators[0] {
+			args = args.tendermintSupplementarySanityEnabled()
+		}
 	}
 
 	if err := val.net.startOasisNode(&val.Node, nil, args); err != nil {

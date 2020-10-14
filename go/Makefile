@@ -17,7 +17,8 @@ generate:
 # Build.
 # List of Go binaries to build.
 go-binaries := oasis-node oasis-test-runner oasis-net-runner oasis-remote-signer \
-	extra/extract-metrics oasis-test-runner/scenario/pluginsigner/example_signer_plugin
+	oasis-test-runner/scenario/pluginsigner/example_signer_plugin \
+	extra/extract-metrics extra/conbench
 
 $(go-binaries):
 	@$(ECHO) "$(MAGENTA)*** Building $@...$(OFF)"

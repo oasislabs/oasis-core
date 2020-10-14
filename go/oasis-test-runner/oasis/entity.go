@@ -38,8 +38,8 @@ type Entity struct {
 
 // EntityCfg is the Oasis entity provisioning configuration.
 type EntityCfg struct {
-	IsDebugTestEntity bool
-	Restore           bool
+	IsDebugTestEntity bool `json:"is_debug_test_entity"`
+	Restore           bool `json:"restore"`
 }
 
 // Inner returns the actual Oasis entity and it's signer.

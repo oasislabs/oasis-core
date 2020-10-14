@@ -143,6 +143,9 @@ type ConsensusFixture struct { // nolint: maligned
 
 	// EnableConsensusRPCWorker enables the public consensus RPC services worker.
 	EnableConsensusRPCWorker bool `json:"enable_consensusrpc_worker,omitempty"`
+
+	// DisableSupplementarySanityChecks disables the supplementary sanity checks.
+	DisableSupplementarySanityChecks bool `json:"disable_supplementary_sanity_checks,omitempty"`
 }
 
 // TEEFixture is a TEE configuration fixture.
