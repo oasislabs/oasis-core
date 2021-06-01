@@ -12,6 +12,7 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/common/keyformat"
 	"github.com/oasisprotocol/oasis-core/go/common/logging"
 	roothash "github.com/oasisprotocol/oasis-core/go/roothash/api"
+	staking "github.com/oasisprotocol/oasis-core/go/staking/api"
 )
 
 const dbVersion = 1
@@ -29,6 +30,14 @@ var (
 	//
 	// Value is CBOR-serialized roothash.RoundResults.
 	roundResultsKeyFmt = keyformat.New(0x03, uint64(0))
+	// stakingEventsKeyFmt is the round staking events index key format.
+	//
+	// Value is CBOR-serialized list of staking.Events.
+	stakingEventsKeyFmt = keyformat.New(0x04, uint64(0))
+	// pendingStakingEventsKeyFmt is the per height pending staking events index key format.
+	//
+	// Value is a CBOR-serialized list of staking.Events.
+	pendingStakingEventsKeyFmt = keyformat.New(0x05, int64(0))
 )
 
 type dbMetadata struct {
@@ -177,14 +186,14 @@ func (d *DB) commit(blk *roothash.AnnotatedBlock, roundResults *roothash.RoundRe
 			)
 		}
 
-		if blk.Height < meta.LastConsensusHeight {
+		if blk.Height <= meta.LastConsensusHeight {
 			return fmt.Errorf("runtime/history: commit at lower consensus height (current: %d wanted: %d)",
 				meta.LastConsensusHeight,
 				blk.Height,
 			)
 		}
 
-		if blk.Block.Header.Round <= meta.LastRound && meta.LastConsensusHeight != 0 {
+		if blk.Block.Header.Round <= meta.LastRound && blk.Block.Header.Round != 0 {
 			return fmt.Errorf("runtime/history: commit at lower round (current: %d wanted: %d)",
 				meta.LastRound,
 				blk.Block.Header.Round,
@@ -199,12 +208,59 @@ func (d *DB) commit(blk *roothash.AnnotatedBlock, roundResults *roothash.RoundRe
 			return err
 		}
 
+		// Load pending staking events.
+		it := tx.NewIterator(badger.DefaultIteratorOptions)
+		defer it.Close()
+		var events []*staking.Event
+		for it.Seek(pendingStakingEventsKeyFmt.Encode()); it.Valid(); it.Next() {
+			// TODO: sanity check no height is greater than blk.Height and less than last committed round height.
+			var evs []*staking.Event
+			err = it.Item().Value(func(val []byte) error {
+				return cbor.UnmarshalTrusted(val, &evs)
+			})
+			if err != nil {
+				return err
+			}
+			events = append(events, evs...)
+		}
+		// Remove pending events.
+		if err = tx.Delete(pendingStakingEventsKeyFmt.Encode()); err != nil {
+			return err
+		}
+
+		if err = tx.Set(stakingEventsKeyFmt.Encode(blk.Block.Header.Round), cbor.Marshal(events)); err != nil {
+			return err
+		}
+
 		meta.LastRound = blk.Block.Header.Round
 		if blk.Height > meta.LastConsensusHeight {
 			meta.LastConsensusHeight = blk.Height
 		}
 
 		return tx.Set(metadataKeyFmt.Encode(), cbor.Marshal(meta))
+	})
+}
+
+func (d *DB) commitPendingConsensusEvents(height int64, stakingEvents []*staking.Event) error {
+	return d.db.Update(func(tx *badger.Txn) error {
+		meta, err := d.queryGetMetadata(tx)
+		if err != nil {
+			return err
+		}
+
+		if height <= meta.LastConsensusHeight {
+			return fmt.Errorf("runtime/history: commit pending consensus events at lower consensus height (current: %d wanted: %d)",
+				meta.LastConsensusHeight,
+				height,
+			)
+		}
+
+		if err = tx.Set(pendingStakingEventsKeyFmt.Encode(height), cbor.Marshal(stakingEvents)); err != nil {
+			return err
+		}
+		// Note: Doesn't commit consensus height.
+
+		return nil
 	})
 }
 
@@ -250,6 +306,28 @@ func (d *DB) getRoundResults(round uint64) (*roothash.RoundResults, error) {
 		return nil, txErr
 	}
 	return roundResults, nil
+}
+
+func (d *DB) getStakingEvents(round uint64) ([]*staking.Event, error) {
+	var stakingEvents []*staking.Event
+	txErr := d.db.View(func(tx *badger.Txn) error {
+		item, err := tx.Get(stakingEventsKeyFmt.Encode(round))
+		switch err {
+		case nil:
+		case badger.ErrKeyNotFound:
+			return roothash.ErrNotFound
+		default:
+			return err
+		}
+
+		return item.Value(func(val []byte) error {
+			return cbor.UnmarshalTrusted(val, &stakingEvents)
+		})
+	})
+	if txErr != nil {
+		return nil, txErr
+	}
+	return stakingEvents, nil
 }
 
 func (d *DB) close() {

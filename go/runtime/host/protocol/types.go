@@ -18,6 +18,7 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/roothash/api/commitment"
 	"github.com/oasisprotocol/oasis-core/go/roothash/api/message"
 	"github.com/oasisprotocol/oasis-core/go/runtime/transaction"
+	staking "github.com/oasisprotocol/oasis-core/go/staking/api"
 	storage "github.com/oasisprotocol/oasis-core/go/storage/api"
 )
 
@@ -272,6 +273,10 @@ type RuntimeExecuteTxBatchRequest struct {
 	// ConsensusBlock is the consensus light block at the last finalized round
 	// height (e.g., corresponding to .Block.Header.Round).
 	ConsensusBlock consensus.LightBlock `json:"consensus_block"`
+
+	// StakingEvents are the runtime related staking events since last round
+	// and up to ConsensusBlock height.
+	StakingEvents []*staking.Event `json:"staking_events"`
 
 	// RoundResults are the results of executing the previous successful round.
 	RoundResults *roothash.RoundResults `json:"round_results"`

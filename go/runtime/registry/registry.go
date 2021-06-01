@@ -292,7 +292,7 @@ func (r *runtime) updateActiveDescriptor(ctx context.Context) bool {
 
 	h := hash.NewFrom(state.Runtime)
 	// This is only called from the watchUpdates thread and activeDescriptorHash
-	// is only mutated bellow, so no need for a lock here.
+	// is only mutated below, so no need for a lock here.
 	if h.Equal(&r.activeDescriptorHash) {
 		r.logger.Debug("active runtime descriptor didn't change",
 			"runtime", state.Runtime,
@@ -547,7 +547,7 @@ func (r *runtimeRegistry) addSupportedRuntime(ctx context.Context, id common.Nam
 	}
 
 	// Start tracking this runtime.
-	if err = r.consensus.RootHash().TrackRuntime(ctx, history); err != nil {
+	if err = r.consensus.TrackRuntime(history); err != nil {
 		return fmt.Errorf("runtime/registry: cannot track runtime %s: %w", id, err)
 	}
 

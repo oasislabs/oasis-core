@@ -11,8 +11,10 @@ import (
 
 	"github.com/oasisprotocol/oasis-core/go/common"
 	"github.com/oasisprotocol/oasis-core/go/common/logging"
+	"github.com/oasisprotocol/oasis-core/go/common/pubsub"
 	roothash "github.com/oasisprotocol/oasis-core/go/roothash/api"
-	"github.com/oasisprotocol/oasis-core/go/roothash/api/block"
+	"github.com/oasisprotocol/oasis-core/go/runtime/history/api"
+	staking "github.com/oasisprotocol/oasis-core/go/staking/api"
 )
 
 // DbFilename is the filename of the history database.
@@ -43,7 +45,7 @@ func NewDefaultConfig() *Config {
 
 // History is the runtime history interface.
 type History interface {
-	roothash.BlockHistory
+	api.BlockHistory
 
 	// Pruner returns the history pruner.
 	Pruner() Pruner
@@ -64,6 +66,10 @@ func (h *nopHistory) Commit(blk *roothash.AnnotatedBlock, roundResults *roothash
 	return errNopHistory
 }
 
+func (h *nopHistory) CommitPendingConsensusEvents(height int64, stakingEvents []*staking.Event) error {
+	return errNopHistory
+}
+
 func (h *nopHistory) ConsensusCheckpoint(height int64) error {
 	return errNopHistory
 }
@@ -72,16 +78,24 @@ func (h *nopHistory) LastConsensusHeight() (int64, error) {
 	return 0, errNopHistory
 }
 
-func (h *nopHistory) GetBlock(ctx context.Context, round uint64) (*block.Block, error) {
+func (h *nopHistory) GetBlock(ctx context.Context, round uint64) (*roothash.AnnotatedBlock, error) {
 	return nil, errNopHistory
 }
 
-func (h *nopHistory) GetLatestBlock(ctx context.Context) (*block.Block, error) {
+func (h *nopHistory) GetLatestBlock(ctx context.Context) (*roothash.AnnotatedBlock, error) {
 	return nil, errNopHistory
 }
 
 func (h *nopHistory) GetRoundResults(ctx context.Context, round uint64) (*roothash.RoundResults, error) {
 	return nil, errNopHistory
+}
+
+func (h *nopHistory) GetRoundEvents(ctx context.Context, round uint64) ([]*staking.Event, error) {
+	return nil, errNopHistory
+}
+
+func (h *nopHistory) WatchBlocks(ctx context.Context) (<-chan *roothash.AnnotatedBlock, *pubsub.Subscription, error) {
+	return nil, nil, errNopHistory
 }
 
 func (h *nopHistory) Pruner() Pruner {
@@ -105,7 +119,8 @@ type runtimeHistory struct {
 	ctx       context.Context
 	cancelCtx context.CancelFunc
 
-	db *DB
+	db            *DB
+	blockNotifier *pubsub.Broker
 
 	pruner        Pruner
 	pruneInterval time.Duration
@@ -119,15 +134,20 @@ func (h *runtimeHistory) RuntimeID() common.Namespace {
 }
 
 func (h *runtimeHistory) Commit(blk *roothash.AnnotatedBlock, roundResults *roothash.RoundResults) error {
-	err := h.db.commit(blk, roundResults)
-	if err != nil {
+	if err := h.db.commit(blk, roundResults); err != nil {
 		return err
 	}
 
+	// Broadcast the new block.
+	h.blockNotifier.Broadcast(blk)
 	// Notify the pruner what the new round is.
 	h.pruneCh.In() <- blk.Block.Header.Round
 
 	return nil
+}
+
+func (h *runtimeHistory) CommitPendingConsensusEvents(height int64, stakingEvents []*staking.Event) error {
+	return h.db.commitPendingConsensusEvents(height, stakingEvents)
 }
 
 func (h *runtimeHistory) ConsensusCheckpoint(height int64) error {
@@ -143,7 +163,7 @@ func (h *runtimeHistory) LastConsensusHeight() (int64, error) {
 	return meta.LastConsensusHeight, nil
 }
 
-func (h *runtimeHistory) GetBlock(ctx context.Context, round uint64) (*block.Block, error) {
+func (h *runtimeHistory) GetBlock(ctx context.Context, round uint64) (*roothash.AnnotatedBlock, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -152,10 +172,10 @@ func (h *runtimeHistory) GetBlock(ctx context.Context, round uint64) (*block.Blo
 		return nil, err
 	}
 
-	return annBlk.Block, nil
+	return annBlk, nil
 }
 
-func (h *runtimeHistory) GetLatestBlock(ctx context.Context) (*block.Block, error) {
+func (h *runtimeHistory) GetLatestBlock(ctx context.Context) (*roothash.AnnotatedBlock, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -168,7 +188,7 @@ func (h *runtimeHistory) GetLatestBlock(ctx context.Context) (*block.Block, erro
 		return nil, err
 	}
 
-	return annBlk.Block, nil
+	return annBlk, nil
 }
 
 func (h *runtimeHistory) GetRoundResults(ctx context.Context, round uint64) (*roothash.RoundResults, error) {
@@ -176,6 +196,32 @@ func (h *runtimeHistory) GetRoundResults(ctx context.Context, round uint64) (*ro
 		return nil, ctx.Err()
 	}
 	return h.db.getRoundResults(round)
+}
+
+func (h *runtimeHistory) GetRoundEvents(ctx context.Context, round uint64) ([]*staking.Event, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+	return h.db.getStakingEvents(round)
+}
+
+func (h *runtimeHistory) WatchBlocks(ctx context.Context) (<-chan *roothash.AnnotatedBlock, *pubsub.Subscription, error) {
+	typedCh := make(chan *roothash.AnnotatedBlock)
+
+	// Load latest block and send it on subscribe hook.
+	latestBlock, err := h.GetLatestBlock(ctx)
+	if err != nil {
+		h.logger.Error("error getting latest block", "err", err)
+	}
+	h.logger.Info("gooooot block from histoery latest", "latest_block", latestBlock, "err", err)
+	sub := h.blockNotifier.SubscribeEx(-1, func(ch channels.Channel) {
+		if latestBlock != nil {
+			ch.In() <- latestBlock
+		}
+	})
+	sub.Unwrap(typedCh)
+
+	return typedCh, sub, nil
 }
 
 func (h *runtimeHistory) Pruner() Pruner {
@@ -250,6 +296,7 @@ func New(dataDir string, runtimeID common.Namespace, cfg *Config) (History, erro
 		ctx:           ctx,
 		cancelCtx:     cancelCtx,
 		db:            db,
+		blockNotifier: pubsub.NewBroker(false),
 		pruner:        pruner,
 		pruneInterval: cfg.PruneInterval,
 		pruneCh:       channels.NewRingChannel(1),

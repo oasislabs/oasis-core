@@ -367,11 +367,13 @@ func (n *Node) checkCheckpointUsable(cp *checkpoint.Metadata, remainingMask outs
 		// Not for the right runtime.
 		return false
 	}
-	blk, err := n.commonNode.Runtime.History().GetBlock(n.ctx, cp.Root.Version)
+	annBlk, err := n.commonNode.Runtime.History().GetBlock(n.ctx, cp.Root.Version)
 	if err != nil {
 		n.logger.Error("can't get block information for checkpoint, skipping", "err", err, "root", cp.Root)
 		return false
 	}
+	blk := annBlk.Block
+
 	_, lastIORoot, lastStateRoot := n.GetLastSynced()
 	lastVersions := map[storageApi.RootType]uint64{
 		storageApi.RootTypeIO:    lastIORoot.Version,

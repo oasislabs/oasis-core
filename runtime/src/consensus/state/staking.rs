@@ -222,7 +222,7 @@ mod test {
     #[test]
     fn test_staking_state_interop() {
         // Keep in sync with go/consensus/tendermint/apps/staking/state/interop/interop.go.
-        // If mock consensus state changes, update the root hash bellow.
+        // If mock consensus state changes, update the root hash below.
         // See protocol server stdout for hash.
 
         // Setup protocol server with initialized mock consensus state.

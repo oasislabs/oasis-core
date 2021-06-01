@@ -216,7 +216,7 @@ func (c *commission) doAmendCommissionSchedule(ctx context.Context, rng *rand.Ra
 
 	// Generate rate steps.
 	// First epoch on which rule steps can be altered is the next epoch.
-	// Note: Another +1 bellow since the epoch could have changed before this
+	// Note: Another +1 below since the epoch could have changed before this
 	// transaction is submitted.
 	nextAllowedRateChangeEpoch := currentEpoch + 1 + 1
 	// Find first epoch after nextAllowedRateChangeEpoch aligned with

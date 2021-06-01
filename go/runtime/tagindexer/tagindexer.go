@@ -31,6 +31,7 @@ type Service struct {
 	runtimeID common.Namespace
 	backend   Backend
 	roothash  roothash.Backend
+	history   history.History
 
 	ctx       context.Context
 	cancelCtx context.CancelFunc
@@ -44,7 +45,7 @@ func (s *Service) worker(storageBackend storage.Backend) {
 	s.Logger.Info("started indexer for runtime")
 
 	// Start watching roothash blocks.
-	blocksCh, blocksSub, err := s.roothash.WatchBlocks(s.runtimeID)
+	blocksCh, blocksSub, err := s.history.WatchBlocks(s.ctx)
 	if err != nil {
 		s.Logger.Error("failed to subscribe to roothash blocks",
 			"err", err,
@@ -167,6 +168,7 @@ func New(
 		runtimeID:             runtimeID,
 		backend:               backend,
 		roothash:              roothash,
+		history:               history,
 		ctx:                   ctx,
 		cancelCtx:             cancelCtx,
 		stopCh:                make(chan struct{}),

@@ -242,6 +242,7 @@ impl Dispatcher {
                 }
                 Body::RuntimeExecuteTxBatchRequest {
                     consensus_block,
+                    staking_events: _,
                     round_results,
                     io_root,
                     inputs,
@@ -254,6 +255,7 @@ impl Dispatcher {
                         protocol.clone(),
                         light_block.get_state_root(),
                     );
+                    // TODO: propagate staking events.
 
                     // Transaction execution.
                     self.dispatch_txn(

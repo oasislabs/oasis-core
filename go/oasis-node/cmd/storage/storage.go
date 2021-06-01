@@ -127,7 +127,7 @@ func (mh *migrateHelper) GetRootForHash(root hash.Hash, version uint64) ([]node.
 	}
 
 	var roots []node.Root
-	for _, blockRoot := range block.Header.StorageRoots() {
+	for _, blockRoot := range block.Block.Header.StorageRoots() {
 		if blockRoot.Hash.Equal(&root) {
 			roots = append(roots, blockRoot)
 		}

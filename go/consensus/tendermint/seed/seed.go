@@ -34,6 +34,7 @@ import (
 	cmflags "github.com/oasisprotocol/oasis-core/go/oasis-node/cmd/common/flags"
 	registry "github.com/oasisprotocol/oasis-core/go/registry/api"
 	roothash "github.com/oasisprotocol/oasis-core/go/roothash/api"
+	runtimeHistory "github.com/oasisprotocol/oasis-core/go/runtime/history/api"
 	scheduler "github.com/oasisprotocol/oasis-core/go/scheduler/api"
 	staking "github.com/oasisprotocol/oasis-core/go/staking/api"
 	"github.com/oasisprotocol/oasis-core/go/storage/mkvs/syncer"
@@ -294,6 +295,11 @@ func (srv *seedService) Governance() governance.Backend {
 
 // Implements Backend.
 func (srv *seedService) SubmissionManager() consensus.SubmissionManager {
+	panic(consensus.ErrUnsupported)
+}
+
+// Implements Backend.
+func (srv *seedService) TrackRuntime(history runtimeHistory.BlockHistory) error {
 	panic(consensus.ErrUnsupported)
 }
 

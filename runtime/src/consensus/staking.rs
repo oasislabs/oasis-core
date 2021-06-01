@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use serde_repr::*;
 
 use crate::{
-    common::quantity::Quantity,
+    common::{crypto::hash::Hash, quantity::Quantity},
     consensus::{address::Address, beacon::EpochTime},
 };
 
@@ -191,6 +191,89 @@ pub struct DebondingDelegation {
     pub debond_end_time: EpochTime,
 }
 
+/// Staking event.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Event {
+    pub height: i64,
+    pub tx_hash: Hash,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub transfer: Option<TransferEvent>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub burn: Option<BurnEvent>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub escrow: Option<EscrowEvent>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub allowance_change: Option<AllowanceChangeEvent>,
+}
+
+/// Event emitted when stake is transferred.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct TransferEvent {
+    pub from: Address,
+    pub to: Address,
+    pub amount: Quantity,
+}
+
+/// Event emitted when stake is burned.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct BurnEvent {
+    pub owner: Address,
+    pub amount: Quantity,
+}
+
+/// Event emitted on staking operations.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct EscrowEvent {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub add: Option<AddEscrowEvent>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub take: Option<TakeEscrowEvent>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub reclaim: Option<ReclaimEscrowEvent>,
+}
+
+/// Event emitted when allowance is changed for a beneficiary.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct AllowanceChangeEvent {
+    pub owner: Address,
+    pub beneficiary: Address,
+    pub allowance: Quantity,
+    #[serde(default)]
+    pub negative: bool,
+    pub amount_change: Quantity,
+}
+
+/// Event emitted when stake is transferred into an escrow account.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct AddEscrowEvent {
+    pub owner: Address,
+    pub escrow: Address,
+    pub amount: Quantity,
+}
+
+/// Event emitted when stake is taken from an escrow account (i.e. stake is slashed).
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct TakeEscrowEvent {
+    pub owner: Address,
+    pub amount: Quantity,
+}
+
+/// Event emitted when stake is reclaimed from an escrow account back into owner's
+/// general account.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct ReclaimEscrowEvent {
+    pub owner: Address,
+    pub escrow: Address,
+    pub amount: Quantity,
+}
 #[cfg(test)]
 mod tests {
     use super::*;

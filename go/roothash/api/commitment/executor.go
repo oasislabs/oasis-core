@@ -46,6 +46,9 @@ type ComputeResultsHeader struct {
 	IORoot       *hash.Hash `json:"io_root,omitempty"`
 	StateRoot    *hash.Hash `json:"state_root,omitempty"`
 	MessagesHash *hash.Hash `json:"messages_hash,omitempty"`
+	// TODO: consensus breaking change. Open a follow up issue to include this
+	// for a later release.
+	// EventsHash   *hash.Hash `json:"events_hash,omitempty"`
 }
 
 // IsParentOf returns true iff the header is the parent of a child header.

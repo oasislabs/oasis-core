@@ -158,8 +158,13 @@ func (w *txSubmitter) start() {
 		close(w.quitCh)
 	}()
 
+	rt, err := w.common.runtimeRegistry.GetRuntime(w.id)
+	if err != nil {
+		w.logger.Error("failed to get runtime from runtime registry", "err", err)
+		return
+	}
 	// Start watching roothash blocks.
-	blocks, blocksSub, err := w.common.consensus.RootHash().WatchBlocks(w.id)
+	blocks, blocksSub, err := rt.History().WatchBlocks(w.common.ctx)
 	if err != nil {
 		w.logger.Error("failed to subscribe to roothash blocks",
 			"err", err,
@@ -288,7 +293,7 @@ func newTxSubmitter(common *clientCommon, id common.Namespace, p2pSvc *p2p.P2P, 
 	p2pSvc.RegisterHandler(id, &p2p.BaseHandler{})
 
 	txSubmitter := &txSubmitter{
-		logger:            logging.GetLogger("client/txsubmitter"),
+		logger:            logging.GetLogger("client/txsubmitter").With("runtime_id", id),
 		common:            common,
 		id:                id,
 		maxTransactionAge: maxTransactionAge,

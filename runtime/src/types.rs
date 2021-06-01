@@ -20,6 +20,7 @@ use crate::{
     consensus::{
         beacon::EpochTime,
         roothash::{self, Block, ComputeResultsHeader, Header},
+        staking::Event as StakingEvent,
         tendermint::LightBlock,
     },
     storage::mkvs::{sync, WriteLog},
@@ -131,6 +132,8 @@ pub enum Body {
     },
     RuntimeExecuteTxBatchRequest {
         consensus_block: LightBlock,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        staking_events: Option<Vec<StakingEvent>>,
         round_results: roothash::RoundResults,
         io_root: Hash,
         #[serde(skip_serializing_if = "Option::is_none")]

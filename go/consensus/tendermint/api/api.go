@@ -14,6 +14,7 @@ import (
 	tmrpctypes "github.com/tendermint/tendermint/rpc/core/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
+	"github.com/oasisprotocol/oasis-core/go/common"
 	"github.com/oasisprotocol/oasis-core/go/common/cbor"
 	"github.com/oasisprotocol/oasis-core/go/common/crypto/hash"
 	"github.com/oasisprotocol/oasis-core/go/common/crypto/signature"
@@ -22,6 +23,7 @@ import (
 	consensus "github.com/oasisprotocol/oasis-core/go/consensus/api"
 	"github.com/oasisprotocol/oasis-core/go/consensus/api/transaction"
 	"github.com/oasisprotocol/oasis-core/go/consensus/tendermint/crypto"
+	"github.com/oasisprotocol/oasis-core/go/roothash/api"
 	mkvsNode "github.com/oasisprotocol/oasis-core/go/storage/mkvs/node"
 )
 
@@ -205,6 +207,9 @@ type Backend interface {
 	// GetLastRetainedVersion returns the earliest retained version the ABCI
 	// state.
 	GetLastRetainedVersion(ctx context.Context) (int64, error)
+
+	// GetLatestIndexedRuntimeBlock returns the last block indexed by the runtime history.
+	GetLatestIndexedRuntimeBlock(id common.Namespace) (*api.AnnotatedBlock, error)
 }
 
 // TransactionAuthHandler is the interface for ABCI applications that handle

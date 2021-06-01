@@ -8,6 +8,7 @@ import (
 
 	"github.com/oasisprotocol/oasis-core/go/common/identity"
 	"github.com/oasisprotocol/oasis-core/go/common/logging"
+	"github.com/oasisprotocol/oasis-core/go/common/pubsub"
 	consensus "github.com/oasisprotocol/oasis-core/go/consensus/api"
 	control "github.com/oasisprotocol/oasis-core/go/control/api"
 	keymanagerApi "github.com/oasisprotocol/oasis-core/go/keymanager/api"
@@ -324,6 +325,7 @@ func (n *Node) handleNodeUpdateLocked(update *nodes.NodeUpdate) {
 
 func (n *Node) worker() {
 	n.logger.Info("starting committee node")
+	initialized := false
 
 	defer close(n.quitCh)
 	defer (n.cancelCtx)()
@@ -384,14 +386,22 @@ func (n *Node) worker() {
 	defer consensusBlocksSub.Close()
 
 	// Start watching roothash blocks.
-	blocks, blocksSub, err := n.Consensus.RootHash().WatchBlocks(n.Runtime.ID())
-	if err != nil {
-		n.logger.Error("failed to subscribe to roothash blocks",
-			"err", err,
-		)
-		return
+	var blocks <-chan *roothash.AnnotatedBlock
+	if n.Runtime.History() != nil {
+		var blocksSub *pubsub.Subscription
+		blocks, blocksSub, err = n.Runtime.History().WatchBlocks(n.ctx)
+		if err != nil {
+			n.logger.Error("failed to subscribe to roothash blocks",
+				"err", err,
+			)
+			return
+		}
+		defer blocksSub.Close()
+	} else {
+		n.logger.Warn("no runtime history, not tracking any roothash blocks")
+		initialized = true
+		close(n.initCh)
 	}
-	defer blocksSub.Close()
 
 	// Start watching roothash events.
 	events, eventsSub, err := n.Consensus.RootHash().WatchEvents(n.Runtime.ID())
@@ -413,7 +423,6 @@ func (n *Node) worker() {
 	}
 	defer nodeUpsSub.Close()
 
-	initialized := false
 	for {
 		select {
 		case <-n.stopCh:

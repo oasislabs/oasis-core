@@ -102,6 +102,9 @@ type Backend interface {
 	// the latest state from the storage backend.
 	GetLatestBlock(ctx context.Context, runtimeID common.Namespace, height int64) (*block.Block, error)
 
+	// GetRoundResults returns the round results.
+	GetRoundResults(ctx context.Context, runtimeID common.Namespace, height int64) (*RoundResults, error)
+
 	// GetRuntimeState returns the given runtime's state.
 	GetRuntimeState(ctx context.Context, runtimeID common.Namespace, height int64) (*RuntimeState, error)
 
@@ -115,9 +118,6 @@ type Backend interface {
 
 	// WatchEvents returns a stream of protocol events.
 	WatchEvents(runtimeID common.Namespace) (<-chan *Event, *pubsub.Subscription, error)
-
-	// TrackRuntime adds a runtime the history of which should be tracked.
-	TrackRuntime(ctx context.Context, history BlockHistory) error
 
 	// StateToGenesis returns the genesis state at specified block height.
 	StateToGenesis(ctx context.Context, height int64) (*Genesis, error)

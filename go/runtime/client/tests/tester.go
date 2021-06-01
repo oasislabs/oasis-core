@@ -18,7 +18,7 @@ import (
 )
 
 // Keep this above the test network's max batch timeout.
-const timeout = 2 * time.Second
+const timeout = 10 * time.Second
 
 // ClientImplementationTests runs the client interface implementation tests.
 func ClientImplementationTests(

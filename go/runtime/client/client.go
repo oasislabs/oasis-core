@@ -208,7 +208,11 @@ func (c *runtimeClient) CheckTx(ctx context.Context, request *api.CheckTxRequest
 
 // Implements api.RuntimeClient.
 func (c *runtimeClient) WatchBlocks(ctx context.Context, runtimeID common.Namespace) (<-chan *roothash.AnnotatedBlock, pubsub.ClosableSubscription, error) {
-	return c.common.consensus.RootHash().WatchBlocks(runtimeID)
+	rt, err := c.common.runtimeRegistry.GetRuntime(runtimeID)
+	if err != nil {
+		return nil, nil, err
+	}
+	return rt.History().WatchBlocks(ctx)
 }
 
 // Implements api.RuntimeClient.
@@ -223,12 +227,17 @@ func (c *runtimeClient) GetBlock(ctx context.Context, request *api.GetBlockReque
 		return nil, err
 	}
 
+	var annBlk *roothash.AnnotatedBlock
 	switch request.Round {
 	case api.RoundLatest:
-		return rt.History().GetLatestBlock(ctx)
+		annBlk, err = rt.History().GetLatestBlock(ctx)
 	default:
-		return rt.History().GetBlock(ctx, request.Round)
+		annBlk, err = rt.History().GetBlock(ctx, request.Round)
 	}
+	if err != nil {
+		return nil, err
+	}
+	return annBlk.Block, nil
 }
 
 func (c *runtimeClient) getTxnTree(blk *block.Block) *transaction.Tree {

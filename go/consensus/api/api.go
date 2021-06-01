@@ -22,6 +22,7 @@ import (
 	keymanager "github.com/oasisprotocol/oasis-core/go/keymanager/api"
 	registry "github.com/oasisprotocol/oasis-core/go/registry/api"
 	roothash "github.com/oasisprotocol/oasis-core/go/roothash/api"
+	runtimeHistory "github.com/oasisprotocol/oasis-core/go/runtime/history/api"
 	scheduler "github.com/oasisprotocol/oasis-core/go/scheduler/api"
 	staking "github.com/oasisprotocol/oasis-core/go/staking/api"
 	mkvsNode "github.com/oasisprotocol/oasis-core/go/storage/mkvs/node"
@@ -248,6 +249,9 @@ type ServicesBackend interface {
 
 	// RootHash returns the roothash backend.
 	RootHash() roothash.Backend
+
+	// TrackRuntime adds a runtime the history of which should be tracked.
+	TrackRuntime(history runtimeHistory.BlockHistory) error
 }
 
 // TransactionAuthHandler is the interface for handling transaction authentication

@@ -11,8 +11,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/oasisprotocol/oasis-core/go/common"
+	"github.com/oasisprotocol/oasis-core/go/common/quantity"
 	roothash "github.com/oasisprotocol/oasis-core/go/roothash/api"
 	"github.com/oasisprotocol/oasis-core/go/roothash/api/block"
+	staking "github.com/oasisprotocol/oasis-core/go/staking/api"
 )
 
 const recvTimeout = 1 * time.Second
@@ -67,6 +69,15 @@ func TestHistory(t *testing.T) {
 		},
 	}
 
+	stakingEvents := []*staking.Event{
+		{Transfer: &staking.TransferEvent{
+			To:     staking.NewRuntimeAddress(runtimeID),
+			Amount: *quantity.NewFromUint64(100),
+		}},
+	}
+	err = history.CommitPendingConsensusEvents(blk.Height, stakingEvents)
+	require.Error(err, "CommitPendingConsensusEvents should fail for lower consensus height")
+
 	err = history.Commit(&blk, roundResults)
 	require.Error(err, "Commit should fail for lower consensus height")
 
@@ -75,6 +86,8 @@ func TestHistory(t *testing.T) {
 	err = history.Commit(&blk, roundResults)
 	require.Error(err, "Commit should fail for different runtime")
 
+	err = history.CommitPendingConsensusEvents(blk.Height, stakingEvents)
+	require.NoError(err, "CommitPendingConsensusEvents")
 	copy(blk.Block.Header.Namespace[:], runtimeID[:])
 	err = history.Commit(&blk, roundResults)
 	require.NoError(err, "Commit")
@@ -91,15 +104,19 @@ func TestHistory(t *testing.T) {
 
 	gotBlk, err := history.GetBlock(context.Background(), 10)
 	require.NoError(err, "GetBlock")
-	require.Equal(&putBlk, gotBlk, "GetBlock should return the correct block")
+	require.Equal(&putBlk, gotBlk.Block, "GetBlock should return the correct block")
 
 	gotLatestBlk, err := history.GetLatestBlock(context.Background())
 	require.NoError(err, "GetLatestBlock")
-	require.Equal(&putBlk, gotLatestBlk, "GetLatestBlock should return the correct block")
+	require.Equal(&putBlk, gotLatestBlk.Block, "GetLatestBlock should return the correct block")
 
 	gotResults, err := history.GetRoundResults(context.Background(), 10)
 	require.NoError(err, "GetRoundResults")
 	require.Equal(roundResults, gotResults, "GetRoundResults should return the correct results")
+
+	gotEvents, err := history.GetRoundEvents(context.Background(), 10)
+	require.NoError(err, "GetRoundEvents")
+	require.Equal(stakingEvents, gotEvents, "GetRoundEvents should return the correct results")
 
 	// Close history and try to reopen and continue.
 	history.Close()
@@ -120,15 +137,16 @@ func TestHistory(t *testing.T) {
 
 	gotBlk, err = history.GetBlock(context.Background(), 10)
 	require.NoError(err, "GetBlock")
-	require.Equal(&putBlk, gotBlk, "GetBlock should return the correct block")
+	require.Equal(&putBlk, gotBlk.Block, "GetBlock should return the correct block")
 
 	gotLatestBlk, err = history.GetLatestBlock(context.Background())
 	require.NoError(err, "GetLatestBlock")
-	require.Equal(&putBlk, gotLatestBlk, "GetLatestBlock should return the correct block")
+	require.Equal(&putBlk, gotLatestBlk.Block, "GetLatestBlock should return the correct block")
 
 	gotResults, err = history.GetRoundResults(context.Background(), 10)
 	require.NoError(err, "GetRoundResults")
 	require.Equal(roundResults, gotResults, "GetRoundResults should return the correct results")
+	// TODO: some more consensus events tests.
 }
 
 type testPruneHandler struct {
@@ -194,6 +212,17 @@ func TestHistoryPrune(t *testing.T) {
 				{Module: "", Code: 0, Index: 1},
 			}
 		}
+		var stakingEvents []*staking.Event
+		if i%3 == 0 {
+			stakingEvents = []*staking.Event{
+				{Transfer: &staking.TransferEvent{
+					To:     staking.NewRuntimeAddress(runtimeID),
+					Amount: *quantity.NewFromUint64(100),
+				}},
+			}
+		}
+		err = history.CommitPendingConsensusEvents(blk.Height, stakingEvents)
+		require.NoError(err, "CommitPendingConsensusEvents")
 
 		roundResults := &roothash.RoundResults{
 			Messages: msgResults,

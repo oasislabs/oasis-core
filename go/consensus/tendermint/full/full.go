@@ -177,6 +177,8 @@ type fullService struct { // nolint: maligned
 	serviceClients   []api.ServiceClient
 	serviceClientsWg sync.WaitGroup
 
+	trackedRuntimes sync.Map
+
 	genesis                  *genesisAPI.Document
 	genesisProvider          genesisAPI.Provider
 	identity                 *identity.Identity
@@ -246,6 +248,8 @@ func (t *fullService) Start() error {
 		go t.syncWorker()
 		// Start block notifier.
 		go t.blockNotifierWorker()
+		// Start the runtime history indexer.
+		go t.runtimeIndexer()
 		// Optionally start metrics updater.
 		if cmmetrics.Enabled() {
 			go t.metrics()
@@ -1028,7 +1032,7 @@ func (t *fullService) GetTendermintBlock(ctx context.Context, height int64) (*tm
 	tmHeight, err := t.heightToTendermintHeight(height)
 	switch err {
 	case nil:
-		// Continues bellow.
+		// Continues below.
 	case consensusAPI.ErrNoCommittedBlocks:
 		// No committed blocks yet.
 		return nil, nil
