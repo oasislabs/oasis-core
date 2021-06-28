@@ -14,6 +14,7 @@ import (
 	"github.com/oasisprotocol/oasis-core/go/common/node"
 	consensus "github.com/oasisprotocol/oasis-core/go/consensus/api"
 	registry "github.com/oasisprotocol/oasis-core/go/registry/api"
+	block "github.com/oasisprotocol/oasis-core/go/roothash/api/block"
 	storage "github.com/oasisprotocol/oasis-core/go/storage/api"
 	upgrade "github.com/oasisprotocol/oasis-core/go/upgrade/api"
 	commonWorker "github.com/oasisprotocol/oasis-core/go/worker/common/api"
@@ -113,7 +114,7 @@ type RuntimeStatus struct {
 	// LatestHash is the hash of the latest runtime block.
 	LatestHash hash.Hash `json:"latest_hash"`
 	// LatestTime is the timestamp of the latest runtime block.
-	LatestTime uint64 `json:"latest_time"`
+	LatestTime block.TimestampType `json:"latest_time"`
 	// LatestStateRoot is the Merkle root of the runtime state tree.
 	LatestStateRoot storage.Root `json:"latest_state_root"`
 

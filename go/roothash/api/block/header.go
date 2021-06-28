@@ -2,7 +2,9 @@ package block
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
+	"time"
 
 	"github.com/oasisprotocol/oasis-core/go/common"
 	"github.com/oasisprotocol/oasis-core/go/common/cbor"
@@ -16,6 +18,13 @@ var ErrInvalidVersion = errors.New("roothash: invalid version")
 
 // HeaderType is the type of header.
 type HeaderType uint8
+
+// Custom time stamp type that encodes like time.Time when marshaling to JSON.
+type TimestampType uint64
+
+func (tst TimestampType) MarshalJSON() ([]byte, error) {
+	return json.Marshal(time.Unix(int64(tst), 0))
+}
 
 const (
 	// Invalid is an invalid header type and should never be stored.
@@ -57,7 +66,7 @@ type Header struct { // nolint: maligned
 	Round uint64 `json:"round"`
 
 	// Timestamp is the block timestamp (POSIX time).
-	Timestamp uint64 `json:"timestamp"`
+	Timestamp TimestampType `json:"timestamp"`
 
 	// HeaderType is the header type.
 	HeaderType HeaderType `json:"header_type"`
