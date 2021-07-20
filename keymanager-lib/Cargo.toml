@@ -15,7 +15,7 @@ anyhow = "1.0"
 lazy_static = "1.3.0"
 lru = "0.6.5"
 io-context = "0.2.0"
-rand = "0.7.3"
+rand = "0.8.4"
 sgx-isa = { version = "0.3.3", features = ["sgxstd"] }
 sp800-185 = "0.2.0"
 tiny-keccak = { version = "2.0.2", features = ["sha3"] }

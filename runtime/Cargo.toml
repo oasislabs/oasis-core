@@ -27,7 +27,7 @@ percent-encoding = "2.1.0"
 chrono = "0.4.19"
 base64 = "0.13.0"
 rustc-hex = "2.0.1"
-rand = "0.7.3"
+rand = "0.8.4"
 futures = "0.3.15"
 tokio = { version = "1", features = ["rt"] }
 # Switch back to specifying version once a release includes:
