@@ -149,12 +149,36 @@ func (app *governanceApplication) BeginBlock(ctx *api.Context, request types.Req
 		"upgrade", ud,
 	)
 
-	// Check if we are running the correct version for the upgrade, if not - trigger a consensus halt.
-	if err := ud.EnsureCompatible(); err != nil {
-		ctx.Logger().Error("not running updated binary",
-			"err", err,
-		)
-		return upgrade.ErrStopForUpgrade
+	// Check if the upgrade descriptor is installed in the node and has been executed.
+	if upgrader := ctx.AppState().Upgrader(); upgrader != nil {
+		switch pu, err := upgrader.GetUpgrade(ctx, ud); err {
+		case nil:
+			// Upgrade exists, make sure it is in the process of being applied.
+			if !pu.HasStage(upgrade.UpgradeStageStartup) {
+				ctx.Logger().Error("upgrade pending but not being applied",
+					"handler", ud.Handler,
+					"epoch", ud.Epoch,
+					"upgrade_height", pu.UpgradeHeight,
+					"last_completed_stage", pu.LastCompletedStage,
+				)
+				return upgrade.ErrStopForUpgrade
+			}
+		case upgrade.ErrUpgradeNotFound:
+			// The upgrade does not exist.
+			ctx.Logger().Error("upgrade handler does not exist",
+				"handler", ud.Handler,
+				"epoch", ud.Epoch,
+				"upgrade_height", pu.UpgradeHeight,
+				"last_completed_stage", pu.LastCompletedStage,
+			)
+			return upgrade.ErrStopForUpgrade
+		default:
+			// Unknown error.
+			ctx.Logger().Error("failed to verify pending upgrade status",
+				"err", err,
+			)
+			return upgrade.ErrStopForUpgrade
+		}
 	}
 
 	ctx.Logger().Info("running version compatible, removing pending upgrade",

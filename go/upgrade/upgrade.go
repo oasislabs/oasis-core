@@ -116,6 +116,19 @@ func (u *upgradeManager) CancelUpgrade(ctx context.Context, descriptor *api.Desc
 	return nil
 }
 
+// Implements api.Backend.
+func (u *upgradeManager) GetUpgrade(ctx context.Context, descriptor *api.Descriptor) (*api.PendingUpgrade, error) {
+	u.Lock()
+	defer u.Unlock()
+
+	for _, pu := range u.pending {
+		if pu.Descriptor.Equals(descriptor) {
+			return pu, nil
+		}
+	}
+	return nil, api.ErrUpgradeNotFound
+}
+
 func (u *upgradeManager) checkStatus() error {
 	u.Lock()
 	defer u.Unlock()

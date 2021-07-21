@@ -77,6 +77,9 @@ var (
 	// ErrUpgradeInProgress is the error returned from CancelUpgrade when the upgrade being cancelled is already in progress.
 	ErrUpgradeInProgress = errors.New(ModuleName, 6, "upgrade: can not cancel upgrade in progress")
 
+	// ErrUpgradeNotFound is the error returned when the upgrade in question cannot be found.
+	ErrUpgradeNotFound = errors.New(ModuleName, 7, "upgrade: not found")
+
 	_ prettyprint.PrettyPrinter = (*Descriptor)(nil)
 )
 
@@ -219,6 +222,11 @@ type Backend interface {
 
 	// CancelUpgrade cancels a specific pending upgrade, unless it is already in progress.
 	CancelUpgrade(context.Context, *Descriptor) error
+
+	// GetUpgrade returns the pending upgrade (if any) that has the given descriptor.
+	//
+	// In case no such upgrade exists, this returns ErrUpgradeNotFound.
+	GetUpgrade(context.Context, *Descriptor) (*PendingUpgrade, error)
 
 	// StartupUpgrade performs the startup portion of the upgrade.
 	// It is idempotent with respect to the current upgrade descriptor.

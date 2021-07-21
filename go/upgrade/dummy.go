@@ -27,6 +27,10 @@ func (u *dummyUpgradeManager) CancelUpgrade(ctx context.Context, descriptor *api
 	return nil
 }
 
+func (u *dummyUpgradeManager) GetUpgrade(ctx context.Context, descriptor *api.Descriptor) (*api.PendingUpgrade, error) {
+	return nil, api.ErrUpgradeNotFound
+}
+
 func (u *dummyUpgradeManager) StartupUpgrade() error {
 	return nil
 }
