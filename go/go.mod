@@ -22,7 +22,7 @@ require (
 	github.com/blevesearch/bleve v1.0.14
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/cenkalti/backoff/v4 v4.1.1
-	github.com/dgraph-io/badger/v2 v2.2007.2
+	github.com/dgraph-io/badger/v2 v2.2007.3
 	github.com/dgraph-io/badger/v3 v3.2103.1
 	github.com/eapache/channels v1.1.0
 	github.com/fxamacker/cbor/v2 v2.2.1-0.20200820021930-bafca87fa6db
@@ -44,7 +44,7 @@ require (
 	github.com/powerman/rpc-codec v1.2.2
 	github.com/prometheus/client_golang v1.11.0
 	github.com/prometheus/common v0.29.0
-	github.com/prometheus/procfs v0.6.0
+	github.com/prometheus/procfs v0.7.1
 	github.com/seccomp/libseccomp-golang v0.9.1
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
