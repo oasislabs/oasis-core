@@ -1566,9 +1566,9 @@ checksum = "1a5b3dd1c072ee7963717671d1ca129f1048fda25edea6b752bfc71ac8854170"
 
 [[package]]
 name = "oid-registry"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54815ff10e7c65c9b149e677ac20aeaa84e87b3bbcf0bdb5ab0355c568ab47c1"
+checksum = "f6aae73e474f83beacd8ae2179e328e03d63d9223949d97e1b7c108059a34715"
 dependencies = [
  "der-parser",
 ]
