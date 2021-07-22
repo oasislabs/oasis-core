@@ -20,4 +20,4 @@ sgx-isa = { version = "0.3.3", features = ["sgxstd"] }
 sp800-185 = "0.2.0"
 tiny-keccak = { version = "2.0.2", features = ["sha3"] }
 x25519-dalek = "1.1.0"
-zeroize = "1.3"
+zeroize = "1.4"
