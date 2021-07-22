@@ -35,7 +35,7 @@ jobs:
         with:
           python-version: '3.x'
       - name: Set up Node.js 12
-        uses: actions/setup-node@v2.2.0
+        uses: actions/setup-node@v2.3.0
         with:
           node-version: "12.x"
       - name: Set up Go 1.16
